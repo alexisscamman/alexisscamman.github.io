@@ -10,7 +10,7 @@ hidediscus: true
 Check out some of my coding projects below:
 
 
-<i class="fa fa-signal"></i> &nbsp; [Wrangling & Exploratory Data Analysis](/project/project1/): Preliminary data analysis of the streams and positions of three songs performed at the 2021 GRAMMY Awards show
+<i class="fa fa-signal"></i> &nbsp; [Wrangling & Exploratory Data Analysis](/project/project1/): Data analysis of the streams and positions of three songs performed at the 2021 GRAMMY Awards show
 
 <i class="fa fa-line-chart"></i> &nbsp; [Modeling, Inference, Prediction](/project/project2/): Modeling and prediction of the damage costs of named hurricanes in the Atlantic from 1950 to 2012
 
