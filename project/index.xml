@@ -1,28 +1,27 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Projects on Chris Turner</title>
+    <title>Projects on Alexis Scamman</title>
     <link>/project/</link>
-    <description>Recent content in Projects on Chris Turner</description>
+    <description>Recent content in Projects on Alexis Scamman</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en-US</language>
-    <lastBuildDate>Tue, 01 Dec 2020 00:00:00 +0000</lastBuildDate><atom:link href="/project/index.xml" rel="self" type="application/rss+xml" />
+    <language>en-US</language><atom:link href="/project/index.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title>Project 1</title>
+      <title>Grammy Performance Song&#39;s Streams and Position</title>
       <link>/project/project1/</link>
-      <pubDate>Tue, 01 Dec 2020 00:00:00 +0000</pubDate>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>/project/project1/</guid>
-      <description> Test Project 1  </description>
+      <description>Introduction The dataset Streams contains the global and US streams by date for 3 Grammy performance songs: Watermelon Sugar-Harry Styles, Everything I Wanted-Billie Eilish, Don’t Start Now-Dua Lipa. This dataset was acquired from a website that contains Spotify streaming data on top songs (https://kworb.net/spotify/). This interested me, because I was curious to see how the number of streams compared since each was performed at the 2021 Grammy’s.</description>
     </item>
     
     <item>
-      <title>Project 2</title>
+      <title>Hurricanes</title>
       <link>/project/project2/</link>
-      <pubDate>Tue, 01 Dec 2020 00:00:00 +0000</pubDate>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>/project/project2/</guid>
-      <description> Test Project 2  </description>
+      <description>Data The dataset I chose includes information on named hurricanes in the Atlantic Ocean. I found this dataset interesting becuase it comes from a paper that claimed that hurricanes with female names were not taken as seriously and therefore caused more deaths and damage. The main variables include: Name, wind speed in MPH, atmospheric pressure at landfall in millibars, date of first landfall, property damage in millions of 2014 US dollars, deaths, and whether the hurricane had a male or female name.</description>
     </item>
     
   </channel>

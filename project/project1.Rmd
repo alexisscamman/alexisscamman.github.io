@@ -1,8 +1,160 @@
 ---
-title: "Project 1"
-author: "Me"
-date: "2020-12-01"
-output: html_document
+title: "Grammy Performance Song's Streams and Position"
+author: "Alexis Scamman"
+date: "4/4/2021"
+output:
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: false
 ---
 
-## Test Project 1
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE, fig.align = "center", 
+    warning = F, message = F, tidy = TRUE, tidy.opts = list(width.cutoff = 60), 
+    R.options = list(max.print = 100))
+```
+
+## Introduction
+
+The dataset Streams contains the global and US streams by date for 3 Grammy performance songs: Watermelon Sugar-Harry Styles, Everything I Wanted-Billie Eilish, Don't Start Now-Dua Lipa. This dataset was acquired from a website that contains Spotify streaming data on top songs (https://kworb.net/spotify/). This interested me, because I was curious to see how the number of streams compared since each was performed at the 2021 Grammy's. The second data set, Positions, was acquired from the same location. It contains the position of each song on Spotify's Top 200 Chart by date. 
+
+All 3 songs were released around the same time, so I expect them to peak at both streams and position around the same time. I also expect to see that all 3 songs increase in position and number of streams after the Grammy's because the songs would have gained relevance again. I am interested to see which song was most popular and remained the most popular for longer.
+
+## Joining Data
+
+```{R}
+library(dplyr)
+library(tidyverse)
+
+library(readxl)
+Streams <- read_excel("Grammy Song Streams.xlsx")
+
+library(readxl)
+Positions <- read_excel("Grammy Song Positions.xlsx")
+
+##joining data sets and removing NA
+charts <- Streams%>% right_join(Positions, by=c("Date"))%>%na.omit
+glimpse(charts)
+
+```
+
+I joined my data using a right join because there is only one shared variable and I didn't need to remove any variables. There were 288 observations in Positions and 504 observations in Streams. In the joined dataset "charts", there are 720 total observations. After omitting variables with NA, there are 570 observations 
+
+## Tidying Data 
+
+```{R}
+##untidying data using pivot_longer
+chartslong<- charts%>% pivot_longer(c=contains("."), names_to="category", values_to="value")%>%separate(category, into=c("chart", "category", "song"))
+glimpse(chartslong)
+
+```
+The data were tidy prior to uploading. I used pivot_longer to make the data into a single column to be able to categorize the number of streams into high, med, and low and categorize the chart position of the songs into top10, top50, top100, and top200 later.
+
+## Wrangling Data
+```{R}
+##arranging Everying I wanted by highest global position
+charts%>%arrange(Global_Position.EIW)%>%select("Date","Global_streams.EIW","Global_Position.EIW")
+##mean position of other songs when Watermelon Sugar is at it's peak position
+charts%>%filter(Global_Position.WS==4)%>%select("Global_Position.WS","Global_Position.EIW", "Global_Position.DSN") %>% summarise_if(is.numeric, mean)
+
+##using mutate to create new categorical variables, position category and streams category 
+chartslong<- charts%>% pivot_longer(c=contains("."), names_to="category", values_to="value")%>%mutate(streams_cat = case_when(value>20000000 ~ "high",value<=20000000 & 5000000<=value ~ "mid", value<5000000 & 1000000<=value ~ "low")) %>%mutate(position_cat = case_when(value<200 & 100<value ~ "top200", value<=100 & 50<value ~ "top100", value<=50 & 10<value ~ "top50", value<=10 ~ "top10"))
+chartslong
+
+##using mutate to create a variable that is the percent of total streams that are from the US
+charts%>%mutate(percent_US=(US_streams.DSN+US_streams.EIW+US_streams.WS)/(Global_streams.DSN+Global_streams.EIW+Global_streams.WS)*100)
+
+##grouping by year to summarize the number of total streams of Watermelon Sugar
+charts1<- charts%>%separate(Date, into=c("year", "month", "day"))
+charts1%>%group_by(year)%>%summarize(WS_streams=sum(Global_streams.WS))
+
+##grouping by streams and position category to get the count of each
+chartslong%>%group_by(streams_cat,position_cat)%>%summarize(count=n())
+
+##The highest position on global charts for each song
+charts%>%summarize_if(is.numeric, min)%>%select("Global_Position.WS", "Global_Position.DSN", "Global_Position.EIW")
+
+##summary of streams all three songs
+chartslong%>%filter(category=="US_streams.WS" | category=="US_streams.EIW"| category=="US_streams.DSN")%>%summarize(mean=mean(value), sd=sd(value), count=n(), se=sd/sqrt(count), variation=var(value), median=median(value))
+
+##matrix
+charts %>% select(is.numeric)%>%cor()
+
+```
+One interesting finding is that when the Global position of Everything I wanted is higher (closer to 1), the streams are usually greater than at lower positions; however not always. This makes sense because streams would need to decline before the position lowered, allowing for days when the song had fewer streams at a higher position than a lower one. Another finding is that when the global position for watermelon sugar was filtered by its top position, 4, the other songs were located at spots further down on the charts, not even within the top 10. 
+
+The Watermelon Sugar streams were grouped by year and summarized by the sum of the streams in that year. Most streams occurred in 2020, which is logical because the song was released late in 2019 and there have only been a few months in 2021. In addition, the data were also grouped by streaming and position category and summarized by the number of days the 3 songs spent in each of the two categories. To get the streaming and position categories, I mutated the numerical variables to create categorical variables, e.g. Top10 is any position a or above 10 on the charts.
+
+## Dimensionality Reduction
+
+```{R}
+##finding the goodness of fit and number of clusters
+library(cluster)
+pam_dat<-charts%>%select(-Date)
+sil_width<-vector()
+for(i in 2:10){
+  pam_fit <- pam(pam_dat, k = i)
+  sil_width[i] <- pam_fit$silinfo$avg.width
+}
+ggplot()+geom_line(aes(x=1:10,y=sil_width))+scale_x_continuous(name="k",breaks=1:10)
+
+##units for graphs
+addUnits <- function(n) {
+  labels <- ifelse(n < 1000, n, ifelse(n < 1e6, paste0(round(n/1e3), 'k'),ifelse(n < 1e9, paste0(round(n/1e6), 'M'))))
+  return(labels)
+}
+
+##scaling data and applying k
+pam1<-pam_dat%>%scale()%>%pam(k=3)
+pam1
+pamclust<-pam_dat%>%mutate(cluster=as.factor(pam1$clustering))
+pamclust%>%ggplot(aes(Global_Position.WS,Global_streams.WS,color=cluster))+geom_point() + scale_y_continuous(labels = addUnits) + xlab("Global Position") + ylab("Global Streams") + ggtitle("Cluster Plot of Watermelon Sugar by Streams and Position")
+
+##cluster summary
+pamclust%>%group_by(cluster)%>%summarize_if(is.numeric,mean,na.rm=T)
+
+##visualizing clusters
+library(plotly)
+pamclust%>%plot_ly(x= ~Global_Position.WS,  y = ~Global_streams.WS, z = ~US_streams.WS, color= ~cluster,
+        type = "scatter3d", mode = "markers")
+
+library(GGally)
+ggpairs(pamclust, columns=1:4, aes(color=cluster)) + theme(axis.text.x = element_text(angle=45)) + scale_y_continuous(labels = addUnits) + scale_x_continuous(labels = addUnits)
+```
+I started by excluding Date from my dataset because it isn't a numerical variable. I then found the average silhouette width to find the best number of clusters to use. The average silhouette width is 0.56 at 2 clusters, which means a reasonable structure has been found. However, I went ahead and used 3 clusters, sil width of 0.52 because it looked better on the visuals and was still a reasonable structure. Using k=3, the dataset was scaled and plotted by 3 clusters. 
+
+The green cluster, 2, is of low global position ranging from 60 to 175 and has less than 10 M streams. This cluster doesn't overlap with the others. The red cluster, 1, is majorly overlapping with the blue cluster, with a few points by the green cluster. These points are roughly between position 15 and 35 on the chart and have around 10 to 15 M streams. The blue cluster, 3, has the highest streams, around 15 to 30 M, but has lower and similar positions to the red cluster. The points in clusters 2 and 3 are closer to each other than they are between other clusters. However, this cluster plot could have also been between 2 clusters instead of 3, since there are 2 more distinct groups.
+
+The 3D plot depicts the global streams of watermelon sugar by US streams and global position. The greater the global streams, the greater the US streams and the lower the position.
+The pair plot shows that the highest correlation of 0.995 was between the global streams and US streams of Everything I Wanted. All three clusters show statistical significance. The lowest correlation, 0.017, was between the global streams of Everything I Wanted and the US streams of Watermelon Sugar.
+
+## Visualizing Data
+
+
+```{R}
+library(ggplot2)
+
+##heatmap
+charts %>% select_if(is.numeric) %>% cor %>% as.data.frame %>% rownames_to_column %>% pivot_longer(-1) %>% ggplot(aes(rowname,name,fill=value))+geom_tile()+ geom_text(aes(label=round(value,2)))+ xlab("")+ ylab("")+coord_fixed() + ggtitle("Correlation Heatmap") + theme(axis.text.x = element_text(angle=-90, size=10)) + scale_fill_gradient2(low="yellow", mid="orange", high="red")
+
+##Graph2
+ggplot(charts, aes(Date, Global_streams.WS)) + geom_line(color="cyan") + geom_point(size=3, aes(color = Global_Position.WS)) + theme_minimal()  + ggtitle("Watermelon Sugar Streams by Date") + ylab("Streams") + xlab("Date") + labs(colour = "Positions") + theme(axis.text.x = element_text(angle=45)) + scale_x_datetime(date_breaks= "1 month") + scale_y_continuous(labels = addUnits)
+
+##Graph3
+song <- chartslong%>%filter(category=="Global_Position.EIW" | category =="Global_Position.WS" | category=="Global_Position.DSN") %>% mutate(category=recode(category, "Global_Position.EIW"= "Everything I Wanted ", "Global_Position.WS" = "Watermelon Sugar", "Global_Position.DSN" = "Don't Start Now"))%>%separate(Date, into=c("year","month","day"))
+
+ggplot(song, aes(x= category, fill=position_cat)) + geom_bar(position="fill") + xlab("Song") + ggtitle("Count of Position Category by Song") +scale_fill_brewer(palette="Dark2",name = "Position Category", labels = c("top10", "top50", "top100", "top200")) + facet_wrap(~year) + theme(axis.text.x = element_text(angle=25))
+
+```
+```{r}
+
+```
+The charts above compare three Grammy performance songs by streams, position, or both. Graph 1 is a correlation heatmap, correlating global streams, US streams and Global position of each song. One interesting thing is that there is a correlation of 1 between the US streams and the global streams of everything I wanted. There is a negative correlation between streams and position because the more streams lead to a position of a lower number, e.g. 1, even though that is a higher position on the chart.  
+
+Graph 2 depicts the streams of Watermelon Sugar by date, colored by position. The lighter blue dots show positions lower on the chart and darker dots show higher positions on the chart. The number of global streams peaked around August 2020, then declined. When the global streams are higher, the position is lower (lower position = higher on the chart). Streaming of Watermelon Sugar increased dramatically after 2020-05, which makes sense because that was the month the music video was released.
+
+Graph 3 shows the proportion of each position category for each song by year. Don't Start Now had the largest portion of top 10 compared to the other two. In 2019, Don't Start Now and Everything I wanted were mostly in the top 10. Watermelon Sugar reached top 10 in 2020, and by 2021 it fell to top 200. I expected all three songs to increase at least to the top 100 following the Grammy's performance, but this wasn't the case. Only Everything I wanted re-entered the top 100.
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

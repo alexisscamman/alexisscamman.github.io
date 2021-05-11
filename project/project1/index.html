@@ -4,10 +4,10 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="author" content="Chris Turner" />
+    <meta name="author" content="Alexis Scamman" />
     
     <link rel="shortcut icon" type="image/x-icon" href="../../img/favicon.ico">
-    <title>Project 1</title>
+    <title>Grammy Performance Song&#39;s Streams and Position</title>
     <meta name="generator" content="Hugo 0.83.1" />
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
     <link rel="stylesheet" type="text/css" href="../../css/main.css" />
@@ -54,13 +54,13 @@
       <div class="container">
         <div class="blog-post">
           <h3>
-            <strong><a href="../../project/project1/">Project 1</a></strong>
+            <strong><a href="../../project/project1/">Grammy Performance Song&#39;s Streams and Position</a></strong>
           </h3>
         </div>
  
 <div class="blog-title">
           <h4>
-         December 1, 2020 
+         January 1, 0001 
             &nbsp;&nbsp;
             
           </h4>
@@ -70,10 +70,330 @@
           <div class="panel-body">
             <div class="blogpost">
               
+<script src="../../rmarkdown-libs/htmlwidgets/htmlwidgets.js"></script>
+<script src="../../rmarkdown-libs/plotly-binding/plotly.js"></script>
+<script src="../../rmarkdown-libs/typedarray/typedarray.min.js"></script>
+<script src="../../rmarkdown-libs/jquery/jquery.min.js"></script>
+<link href="../../rmarkdown-libs/crosstalk/css/crosstalk.css" rel="stylesheet" />
+<script src="../../rmarkdown-libs/crosstalk/js/crosstalk.min.js"></script>
+<link href="../../rmarkdown-libs/plotly-htmlwidgets-css/plotly-htmlwidgets.css" rel="stylesheet" />
+<script src="../../rmarkdown-libs/plotly-main/plotly-latest.min.js"></script>
 
 
-<div id="test-project-1" class="section level2">
-<h2>Test Project 1</h2>
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>The dataset Streams contains the global and US streams by date for 3 Grammy performance songs: Watermelon Sugar-Harry Styles, Everything I Wanted-Billie Eilish, Don’t Start Now-Dua Lipa. This dataset was acquired from a website that contains Spotify streaming data on top songs (<a href="https://kworb.net/spotify/" class="uri">https://kworb.net/spotify/</a>). This interested me, because I was curious to see how the number of streams compared since each was performed at the 2021 Grammy’s. The second data set, Positions, was acquired from the same location. It contains the position of each song on Spotify’s Top 200 Chart by date.</p>
+<p>All 3 songs were released around the same time, so I expect them to peak at both streams and position around the same time. I also expect to see that all 3 songs increase in position and number of streams after the Grammy’s because the songs would have gained relevance again. I am interested to see which song was most popular and remained the most popular for longer.</p>
+</div>
+<div id="joining-data" class="section level2">
+<h2>Joining Data</h2>
+<pre class="r"><code>library(dplyr)
+library(tidyverse)
+
+library(readxl)
+Streams &lt;- read_excel(&quot;Grammy Song Streams.xlsx&quot;)
+
+library(readxl)
+Positions &lt;- read_excel(&quot;Grammy Song Positions.xlsx&quot;)
+
+## joining data sets and removing NA
+charts &lt;- Streams %&gt;% right_join(Positions, by = c(&quot;Date&quot;)) %&gt;% 
+    na.omit
+glimpse(charts)</code></pre>
+<pre><code>## Rows: 57
+## Columns: 10
+## $ Date                &lt;dttm&gt; 2019-11-21, 2019-11-28, 2019-12-05, 2019-12-12, …
+## $ Global_streams.WS   &lt;dbl&gt; 13067797, 15727628, 12448702, 13162182, 21814400,…
+## $ US_streams.WS       &lt;dbl&gt; 5465192, 5482936, 3862193, 4524384, 8252165, 5152…
+## $ Global_streams.EIW  &lt;dbl&gt; 40323676, 30455759, 27081940, 22700664, 22786542,…
+## $ US_streams.EIW      &lt;dbl&gt; 11794982, 7926800, 7130246, 6153403, 6023398, 559…
+## $ Global_streams.DSN  &lt;dbl&gt; 25716644, 25433949, 25181606, 22708996, 24730286,…
+## $ US_streams.DSN      &lt;dbl&gt; 4753717, 4370345, 4137710, 3903782, 4307806, 3973…
+## $ Global_Position.WS  &lt;dbl&gt; 21, 18, 26, 31, 14, 36, 22, 21, 29, 39, 40, 59, 6…
+## $ Global_Position.DSN &lt;dbl&gt; 7, 6, 8, 9, 8, 13, 7, 8, 8, 10, 10, 5, 4, 6, 4, 4…
+## $ Global_Position.EIW &lt;dbl&gt; 2, 3, 5, 10, 11, 16, 10, 11, 13, 13, 11, 11, 11, …</code></pre>
+<p>I joined my data using a right join because there is only one shared variable and I didn’t need to remove any variables. There were 288 observations in Positions and 504 observations in Streams. In the joined dataset “charts”, there are 720 total observations. After omitting variables with NA, there are 570 observations</p>
+</div>
+<div id="tidying-data" class="section level2">
+<h2>Tidying Data</h2>
+<pre class="r"><code>## untidying data using pivot_longer
+chartslong &lt;- charts %&gt;% pivot_longer(c = contains(&quot;.&quot;), names_to = &quot;category&quot;, 
+    values_to = &quot;value&quot;) %&gt;% separate(category, into = c(&quot;chart&quot;, 
+    &quot;category&quot;, &quot;song&quot;))
+glimpse(chartslong)</code></pre>
+<pre><code>## Rows: 513
+## Columns: 5
+## $ Date     &lt;dttm&gt; 2019-11-21, 2019-11-21, 2019-11-21, 2019-11-21, 2019-11-21,…
+## $ chart    &lt;chr&gt; &quot;Global&quot;, &quot;US&quot;, &quot;Global&quot;, &quot;US&quot;, &quot;Global&quot;, &quot;US&quot;, &quot;Global&quot;, &quot;G…
+## $ category &lt;chr&gt; &quot;streams&quot;, &quot;streams&quot;, &quot;streams&quot;, &quot;streams&quot;, &quot;streams&quot;, &quot;stre…
+## $ song     &lt;chr&gt; &quot;WS&quot;, &quot;WS&quot;, &quot;EIW&quot;, &quot;EIW&quot;, &quot;DSN&quot;, &quot;DSN&quot;, &quot;WS&quot;, &quot;DSN&quot;, &quot;EIW&quot;, …
+## $ value    &lt;dbl&gt; 13067797, 5465192, 40323676, 11794982, 25716644, 4753717, 21…</code></pre>
+<p>The data were tidy prior to uploading. I used pivot_longer to make the data into a single column to be able to categorize the number of streams into high, med, and low and categorize the chart position of the songs into top10, top50, top100, and top200 later.</p>
+</div>
+<div id="wrangling-data" class="section level2">
+<h2>Wrangling Data</h2>
+<pre class="r"><code>## arranging Everying I wanted by highest global position
+charts %&gt;% arrange(Global_Position.EIW) %&gt;% select(&quot;Date&quot;, &quot;Global_streams.EIW&quot;, 
+    &quot;Global_Position.EIW&quot;)</code></pre>
+<pre><code>## # A tibble: 57 x 3
+##    Date                Global_streams.EIW Global_Position.EIW
+##    &lt;dttm&gt;                           &lt;dbl&gt;               &lt;dbl&gt;
+##  1 2019-11-21 00:00:00           40323676                   2
+##  2 2019-11-28 00:00:00           30455759                   3
+##  3 2019-12-05 00:00:00           27081940                   5
+##  4 2019-12-12 00:00:00           22700664                  10
+##  5 2020-01-02 00:00:00           21828884                  10
+##  6 2019-12-19 00:00:00           22786542                  11
+##  7 2020-01-09 00:00:00           23713150                  11
+##  8 2020-01-30 00:00:00           26396743                  11
+##  9 2020-02-06 00:00:00           26024099                  11
+## 10 2020-02-13 00:00:00           25681970                  11
+## # … with 47 more rows</code></pre>
+<pre class="r"><code>## mean position of other songs when Watermelon Sugar is at
+## it&#39;s peak position
+charts %&gt;% filter(Global_Position.WS == 4) %&gt;% select(&quot;Global_Position.WS&quot;, 
+    &quot;Global_Position.EIW&quot;, &quot;Global_Position.DSN&quot;) %&gt;% summarise_if(is.numeric, 
+    mean)</code></pre>
+<pre><code>## # A tibble: 1 x 3
+##   Global_Position.WS Global_Position.EIW Global_Position.DSN
+##                &lt;dbl&gt;               &lt;dbl&gt;               &lt;dbl&gt;
+## 1                  4                86.5                23.5</code></pre>
+<pre class="r"><code>## using mutate to create new categorical variables, position
+## category and streams category
+chartslong &lt;- charts %&gt;% pivot_longer(c = contains(&quot;.&quot;), names_to = &quot;category&quot;, 
+    values_to = &quot;value&quot;) %&gt;% mutate(streams_cat = case_when(value &gt; 
+    2e+07 ~ &quot;high&quot;, value &lt;= 2e+07 &amp; 5e+06 &lt;= value ~ &quot;mid&quot;, 
+    value &lt; 5e+06 &amp; 1e+06 &lt;= value ~ &quot;low&quot;)) %&gt;% mutate(position_cat = case_when(value &lt; 
+    200 &amp; 100 &lt; value ~ &quot;top200&quot;, value &lt;= 100 &amp; 50 &lt; value ~ 
+    &quot;top100&quot;, value &lt;= 50 &amp; 10 &lt; value ~ &quot;top50&quot;, value &lt;= 10 ~ 
+    &quot;top10&quot;))
+chartslong</code></pre>
+<pre><code>## # A tibble: 513 x 5
+##    Date                category               value streams_cat position_cat
+##    &lt;dttm&gt;              &lt;chr&gt;                  &lt;dbl&gt; &lt;chr&gt;       &lt;chr&gt;       
+##  1 2019-11-21 00:00:00 Global_streams.WS   13067797 mid         &lt;NA&gt;        
+##  2 2019-11-21 00:00:00 US_streams.WS        5465192 mid         &lt;NA&gt;        
+##  3 2019-11-21 00:00:00 Global_streams.EIW  40323676 high        &lt;NA&gt;        
+##  4 2019-11-21 00:00:00 US_streams.EIW      11794982 mid         &lt;NA&gt;        
+##  5 2019-11-21 00:00:00 Global_streams.DSN  25716644 high        &lt;NA&gt;        
+##  6 2019-11-21 00:00:00 US_streams.DSN       4753717 low         &lt;NA&gt;        
+##  7 2019-11-21 00:00:00 Global_Position.WS        21 &lt;NA&gt;        top50       
+##  8 2019-11-21 00:00:00 Global_Position.DSN        7 &lt;NA&gt;        top10       
+##  9 2019-11-21 00:00:00 Global_Position.EIW        2 &lt;NA&gt;        top10       
+## 10 2019-11-28 00:00:00 Global_streams.WS   15727628 mid         &lt;NA&gt;        
+## # … with 503 more rows</code></pre>
+<pre class="r"><code>## using mutate to create a variable that is the percent of
+## total streams that are from the US
+charts %&gt;% mutate(percent_US = (US_streams.DSN + US_streams.EIW + 
+    US_streams.WS)/(Global_streams.DSN + Global_streams.EIW + 
+    Global_streams.WS) * 100)</code></pre>
+<pre><code>## # A tibble: 57 x 11
+##    Date                Global_streams.… US_streams.WS Global_streams.…
+##    &lt;dttm&gt;                         &lt;dbl&gt;         &lt;dbl&gt;            &lt;dbl&gt;
+##  1 2019-11-21 00:00:00         13067797       5465192         40323676
+##  2 2019-11-28 00:00:00         15727628       5482936         30455759
+##  3 2019-12-05 00:00:00         12448702       3862193         27081940
+##  4 2019-12-12 00:00:00         13162182       4524384         22700664
+##  5 2019-12-19 00:00:00         21814400       8252165         22786542
+##  6 2019-12-26 00:00:00         15195825       5152495         21586527
+##  7 2020-01-02 00:00:00         14548153       4811184         21828884
+##  8 2020-01-09 00:00:00         15046960       4793358         23713150
+##  9 2020-01-16 00:00:00         14108205       4418408         23297771
+## 10 2020-01-23 00:00:00         12650858       3949802         21786149
+## # … with 47 more rows, and 7 more variables: US_streams.EIW &lt;dbl&gt;,
+## #   Global_streams.DSN &lt;dbl&gt;, US_streams.DSN &lt;dbl&gt;, Global_Position.WS &lt;dbl&gt;,
+## #   Global_Position.DSN &lt;dbl&gt;, Global_Position.EIW &lt;dbl&gt;, percent_US &lt;dbl&gt;</code></pre>
+<pre class="r"><code>## grouping by year to summarize the number of total streams
+## of Watermelon Sugar
+charts1 &lt;- charts %&gt;% separate(Date, into = c(&quot;year&quot;, &quot;month&quot;, 
+    &quot;day&quot;))
+charts1 %&gt;% group_by(year) %&gt;% summarize(WS_streams = sum(Global_streams.WS))</code></pre>
+<pre><code>## # A tibble: 3 x 2
+##   year  WS_streams
+##   &lt;chr&gt;      &lt;dbl&gt;
+## 1 2019    91416534
+## 2 2020   752624056
+## 3 2021    64787707</code></pre>
+<pre class="r"><code>## grouping by streams and position category to get the count
+## of each
+chartslong %&gt;% group_by(streams_cat, position_cat) %&gt;% summarize(count = n())</code></pre>
+<pre><code>## # A tibble: 7 x 3
+## # Groups:   streams_cat [4]
+##   streams_cat position_cat count
+##   &lt;chr&gt;       &lt;chr&gt;        &lt;int&gt;
+## 1 high        &lt;NA&gt;            65
+## 2 low         &lt;NA&gt;           125
+## 3 mid         &lt;NA&gt;           152
+## 4 &lt;NA&gt;        top10           53
+## 5 &lt;NA&gt;        top100          26
+## 6 &lt;NA&gt;        top200          27
+## 7 &lt;NA&gt;        top50           65</code></pre>
+<pre class="r"><code>## The highest position on global charts for each song
+charts %&gt;% summarize_if(is.numeric, min) %&gt;% select(&quot;Global_Position.WS&quot;, 
+    &quot;Global_Position.DSN&quot;, &quot;Global_Position.EIW&quot;)</code></pre>
+<pre><code>## # A tibble: 1 x 3
+##   Global_Position.WS Global_Position.DSN Global_Position.EIW
+##                &lt;dbl&gt;               &lt;dbl&gt;               &lt;dbl&gt;
+## 1                  4                   2                   2</code></pre>
+<pre class="r"><code>## summary of streams all three songs
+chartslong %&gt;% filter(category == &quot;US_streams.WS&quot; | category == 
+    &quot;US_streams.EIW&quot; | category == &quot;US_streams.DSN&quot;) %&gt;% summarize(mean = mean(value), 
+    sd = sd(value), count = n(), se = sd/sqrt(count), variation = var(value), 
+    median = median(value))</code></pre>
+<pre><code>## # A tibble: 1 x 6
+##       mean       sd count      se variation  median
+##      &lt;dbl&gt;    &lt;dbl&gt; &lt;int&gt;   &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt;
+## 1 3707309. 1891235.   171 144626.   3.58e12 3273961</code></pre>
+<pre class="r"><code>## matrix
+charts %&gt;% select(is.numeric) %&gt;% cor()</code></pre>
+<pre><code>##                     Global_streams.WS US_streams.WS Global_streams.EIW
+## Global_streams.WS           1.0000000   0.826428494        -0.38168678
+## US_streams.WS               0.8264285   1.000000000         0.01730623
+## Global_streams.EIW         -0.3816868   0.017306229         1.00000000
+## US_streams.EIW             -0.3638959   0.048300261         0.99502127
+## Global_streams.DSN         -0.6517936  -0.306293097         0.69635633
+## US_streams.DSN             -0.6917776  -0.351074598         0.66869774
+## Global_Position.WS         -0.8424157  -0.762265809         0.23064792
+## Global_Position.DSN         0.4578963   0.021715034        -0.61079660
+## Global_Position.EIW         0.4608811   0.004204046        -0.84105969
+##                     US_streams.EIW Global_streams.DSN US_streams.DSN
+## Global_streams.WS      -0.36389589         -0.6517936     -0.6917776
+## US_streams.WS           0.04830026         -0.3062931     -0.3510746
+## Global_streams.EIW      0.99502127          0.6963563      0.6686977
+## US_streams.EIW          1.00000000          0.6632508      0.6388897
+## Global_streams.DSN      0.66325079          1.0000000      0.9910112
+## US_streams.DSN          0.63888966          0.9910112      1.0000000
+## Global_Position.WS      0.19999238          0.7226471      0.7408585
+## Global_Position.DSN    -0.60012476         -0.8862738     -0.8684345
+## Global_Position.EIW    -0.82702233         -0.8976685     -0.8711059
+##                     Global_Position.WS Global_Position.DSN Global_Position.EIW
+## Global_streams.WS           -0.8424157          0.45789632         0.460881135
+## US_streams.WS               -0.7622658          0.02171503         0.004204046
+## Global_streams.EIW           0.2306479         -0.61079660        -0.841059689
+## US_streams.EIW               0.1999924         -0.60012476        -0.827022334
+## Global_streams.DSN           0.7226471         -0.88627377        -0.897668534
+## US_streams.DSN               0.7408585         -0.86843452        -0.871105942
+## Global_Position.WS           1.0000000         -0.52969532        -0.469673275
+## Global_Position.DSN         -0.5296953          1.00000000         0.894026762
+## Global_Position.EIW         -0.4696733          0.89402676         1.000000000</code></pre>
+<p>One interesting finding is that when the Global position of Everything I wanted is higher (closer to 1), the streams are usually greater than at lower positions; however not always. This makes sense because streams would need to decline before the position lowered, allowing for days when the song had fewer streams at a higher position than a lower one. Another finding is that when the global position for watermelon sugar was filtered by its top position, 4, the other songs were located at spots further down on the charts, not even within the top 10.</p>
+<p>The Watermelon Sugar streams were grouped by year and summarized by the sum of the streams in that year. Most streams occurred in 2020, which is logical because the song was released late in 2019 and there have only been a few months in 2021. In addition, the data were also grouped by streaming and position category and summarized by the number of days the 3 songs spent in each of the two categories. To get the streaming and position categories, I mutated the numerical variables to create categorical variables, e.g. Top10 is any position a or above 10 on the charts.</p>
+</div>
+<div id="dimensionality-reduction" class="section level2">
+<h2>Dimensionality Reduction</h2>
+<pre class="r"><code>## finding the goodness of fit and number of clusters
+library(cluster)
+pam_dat &lt;- charts %&gt;% select(-Date)
+sil_width &lt;- vector()
+for (i in 2:10) {
+    pam_fit &lt;- pam(pam_dat, k = i)
+    sil_width[i] &lt;- pam_fit$silinfo$avg.width
+}
+ggplot() + geom_line(aes(x = 1:10, y = sil_width)) + scale_x_continuous(name = &quot;k&quot;, 
+    breaks = 1:10)</code></pre>
+<p><img src="../../project/project1_files/figure-html/unnamed-chunk-4-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>## units for graphs
+addUnits &lt;- function(n) {
+    labels &lt;- ifelse(n &lt; 1000, n, ifelse(n &lt; 1e+06, paste0(round(n/1000), 
+        &quot;k&quot;), ifelse(n &lt; 1e+09, paste0(round(n/1e+06), &quot;M&quot;))))
+    return(labels)
+}
+
+## scaling data and applying k
+pam1 &lt;- pam_dat %&gt;% scale() %&gt;% pam(k = 3)
+pam1</code></pre>
+<pre><code>## Medoids:
+##      ID Global_streams.WS US_streams.WS Global_streams.EIW US_streams.EIW
+## [1,]  8        -0.1213525     0.4695692         1.31953233     1.25746844
+## [2,] 18        -1.2621094    -1.2402709         0.09472612    -0.01917254
+## [3,] 44         1.1278442     0.3384874        -0.76155951    -0.76279983
+##      Global_streams.DSN US_streams.DSN Global_Position.WS Global_Position.DSN
+## [1,]          0.8063292      0.8595538         -0.4266729          -0.7258366
+## [2,]          1.0133658      0.9869549          1.8112312          -0.9291422
+## [3,]         -1.1206643     -1.1337999         -0.8041507           0.9514345
+##      Global_Position.EIW
+## [1,]          -1.1781842
+## [2,]          -0.5970029
+## [3,]           0.8860114
+## Clustering vector:
+##  [1] 1 1 1 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 2 2 2 1 3 3 3 3 3 3 3 3 3 3 3
+## [39] 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3
+## Objective function:
+##    build     swap 
+## 1.667235 1.453233 
+## 
+## Available components:
+##  [1] &quot;medoids&quot;    &quot;id.med&quot;     &quot;clustering&quot; &quot;objective&quot;  &quot;isolation&quot; 
+##  [6] &quot;clusinfo&quot;   &quot;silinfo&quot;    &quot;diss&quot;       &quot;call&quot;       &quot;data&quot;</code></pre>
+<pre class="r"><code>pamclust &lt;- pam_dat %&gt;% mutate(cluster = as.factor(pam1$clustering))
+pamclust %&gt;% ggplot(aes(Global_Position.WS, Global_streams.WS, 
+    color = cluster)) + geom_point() + scale_y_continuous(labels = addUnits) + 
+    xlab(&quot;Global Position&quot;) + ylab(&quot;Global Streams&quot;) + ggtitle(&quot;Cluster Plot of Watermelon Sugar by Streams and Position&quot;)</code></pre>
+<p><img src="../../project/project1_files/figure-html/unnamed-chunk-4-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>## cluster summary
+pamclust %&gt;% group_by(cluster) %&gt;% summarize_if(is.numeric, mean, 
+    na.rm = T)</code></pre>
+<pre><code>## # A tibble: 3 x 10
+##   cluster Global_streams.… US_streams.WS Global_streams.… US_streams.EIW
+##   &lt;fct&gt;              &lt;dbl&gt;         &lt;dbl&gt;            &lt;dbl&gt;          &lt;dbl&gt;
+## 1 1              13694358.      4608152.        24445802.       6493461.
+## 2 2               6745782.      2173695.        13752838.       3590937.
+## 3 3              20980404.      4589396.         6536571.       1832865.
+## # … with 5 more variables: Global_streams.DSN &lt;dbl&gt;, US_streams.DSN &lt;dbl&gt;,
+## #   Global_Position.WS &lt;dbl&gt;, Global_Position.DSN &lt;dbl&gt;,
+## #   Global_Position.EIW &lt;dbl&gt;</code></pre>
+<pre class="r"><code>## visualizing clusters
+library(plotly)
+pamclust %&gt;% plot_ly(x = ~Global_Position.WS, y = ~Global_streams.WS, 
+    z = ~US_streams.WS, color = ~cluster, type = &quot;scatter3d&quot;, 
+    mode = &quot;markers&quot;)</code></pre>
+<div id="htmlwidget-1" style="width:672px;height:480px;" class="plotly html-widget"></div>
+<script type="application/json" data-for="htmlwidget-1">{"x":{"visdat":{"11d0f4af6c4d4":["function () ","plotlyVisDat"]},"cur_data":"11d0f4af6c4d4","attrs":{"11d0f4af6c4d4":{"x":{},"y":{},"z":{},"mode":"markers","color":{},"alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"type":"scatter3d"}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"scene":{"xaxis":{"title":"Global_Position.WS"},"yaxis":{"title":"Global_streams.WS"},"zaxis":{"title":"US_streams.WS"}},"hovermode":"closest","showlegend":true},"source":"A","config":{"showSendToCloud":false},"data":[{"x":[21,18,26,31,14,36,22,21,29,39,40,59,63,24],"y":[13067797,15727628,12448702,13162182,21814400,15195825,14548153,15046960,14108205,12650858,11924877,9394184,8483814,14147420],"z":[5465192,5482936,3862193,4524384,8252165,5152495,4811184,4793358,4418408,3949802,3822672,2916694,2664219,4398421],"mode":"markers","type":"scatter3d","name":"1","marker":{"color":"rgba(102,194,165,1)","line":{"color":"rgba(102,194,165,1)"}},"textfont":{"color":"rgba(102,194,165,1)"},"error_y":{"color":"rgba(102,194,165,1)"},"error_x":{"color":"rgba(102,194,165,1)"},"line":{"color":"rgba(102,194,165,1)"},"frame":null},{"x":[78,82,100,96,104,109,100,103,108,107,119,118,64],"y":[8152387,8002244,8067772,6924413,6611114,6256764,6138046,5900539,5918056,5801880,5737705,5724487,8459763],"z":[2554541,2578377,2608862,2151071,2061276,2010318,1976777,1893622,1913675,1926766,1933680,1891664,2757401],"mode":"markers","type":"scatter3d","name":"2","marker":{"color":"rgba(252,141,98,1)","line":{"color":"rgba(252,141,98,1)"}},"textfont":{"color":"rgba(252,141,98,1)"},"error_y":{"color":"rgba(252,141,98,1)"},"error_x":{"color":"rgba(252,141,98,1)"},"line":{"color":"rgba(252,141,98,1)"},"frame":null},{"x":[21,15,7,7,6,5,5,4,7,4,5,5,6,7,6,5,7,8,10,9,11,11,13,25,21,17,29,36,27,29],"y":[15505154,16911695,20988333,22472958,24623718,26154801,26440765,26680752,26158284,27694331,28265526,27982035,27020894,26563881,26120174,25237621,24284713,23372224,21785491,20927094,8631776,20590555,18095305,16147806,15968529,14205168,12347071,11556311,13225891,13453266],"z":[4459225,5112178,6054204,6028536,6541264,6689854,6237976,5991322,5765082,5999126,5950325,6061009,5602418,5315675,5239672,4801434,4583908,4323798,4019414,3935561,3782070,3724638,3283614,2946368,3065581,2840470,2153331,2110527,2535840,2527452],"mode":"markers","type":"scatter3d","name":"3","marker":{"color":"rgba(141,160,203,1)","line":{"color":"rgba(141,160,203,1)"}},"textfont":{"color":"rgba(141,160,203,1)"},"error_y":{"color":"rgba(141,160,203,1)"},"error_x":{"color":"rgba(141,160,203,1)"},"line":{"color":"rgba(141,160,203,1)"},"frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.2,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
+<pre class="r"><code>library(GGally)
+ggpairs(pamclust, columns = 1:4, aes(color = cluster)) + theme(axis.text.x = element_text(angle = 45)) + 
+    scale_y_continuous(labels = addUnits) + scale_x_continuous(labels = addUnits)</code></pre>
+<p><img src="../../project/project1_files/figure-html/unnamed-chunk-4-4.png" width="672" style="display: block; margin: auto;" />
+I started by excluding Date from my dataset because it isn’t a numerical variable. I then found the average silhouette width to find the best number of clusters to use. The average silhouette width is 0.56 at 2 clusters, which means a reasonable structure has been found. However, I went ahead and used 3 clusters, sil width of 0.52 because it looked better on the visuals and was still a reasonable structure. Using k=3, the dataset was scaled and plotted by 3 clusters.</p>
+<p>The green cluster, 2, is of low global position ranging from 60 to 175 and has less than 10 M streams. This cluster doesn’t overlap with the others. The red cluster, 1, is majorly overlapping with the blue cluster, with a few points by the green cluster. These points are roughly between position 15 and 35 on the chart and have around 10 to 15 M streams. The blue cluster, 3, has the highest streams, around 15 to 30 M, but has lower and similar positions to the red cluster. The points in clusters 2 and 3 are closer to each other than they are between other clusters. However, this cluster plot could have also been between 2 clusters instead of 3, since there are 2 more distinct groups.</p>
+<p>The 3D plot depicts the global streams of watermelon sugar by US streams and global position. The greater the global streams, the greater the US streams and the lower the position.
+The pair plot shows that the highest correlation of 0.995 was between the global streams and US streams of Everything I Wanted. All three clusters show statistical significance. The lowest correlation, 0.017, was between the global streams of Everything I Wanted and the US streams of Watermelon Sugar.</p>
+</div>
+<div id="visualizing-data" class="section level2">
+<h2>Visualizing Data</h2>
+<pre class="r"><code>library(ggplot2)
+
+## heatmap
+charts %&gt;% select_if(is.numeric) %&gt;% cor %&gt;% as.data.frame %&gt;% 
+    rownames_to_column %&gt;% pivot_longer(-1) %&gt;% ggplot(aes(rowname, 
+    name, fill = value)) + geom_tile() + geom_text(aes(label = round(value, 
+    2))) + xlab(&quot;&quot;) + ylab(&quot;&quot;) + coord_fixed() + ggtitle(&quot;Correlation Heatmap&quot;) + 
+    theme(axis.text.x = element_text(angle = -90, size = 10)) + 
+    scale_fill_gradient2(low = &quot;yellow&quot;, mid = &quot;orange&quot;, high = &quot;red&quot;)</code></pre>
+<p><img src="../../project/project1_files/figure-html/unnamed-chunk-5-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>## Graph2
+ggplot(charts, aes(Date, Global_streams.WS)) + geom_line(color = &quot;cyan&quot;) + 
+    geom_point(size = 3, aes(color = Global_Position.WS)) + theme_minimal() + 
+    ggtitle(&quot;Watermelon Sugar Streams by Date&quot;) + ylab(&quot;Streams&quot;) + 
+    xlab(&quot;Date&quot;) + labs(colour = &quot;Positions&quot;) + theme(axis.text.x = element_text(angle = 45)) + 
+    scale_x_datetime(date_breaks = &quot;1 month&quot;) + scale_y_continuous(labels = addUnits)</code></pre>
+<p><img src="../../project/project1_files/figure-html/unnamed-chunk-5-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>## Graph3
+song &lt;- chartslong %&gt;% filter(category == &quot;Global_Position.EIW&quot; | 
+    category == &quot;Global_Position.WS&quot; | category == &quot;Global_Position.DSN&quot;) %&gt;% 
+    mutate(category = recode(category, Global_Position.EIW = &quot;Everything I Wanted &quot;, 
+        Global_Position.WS = &quot;Watermelon Sugar&quot;, Global_Position.DSN = &quot;Don&#39;t Start Now&quot;)) %&gt;% 
+    separate(Date, into = c(&quot;year&quot;, &quot;month&quot;, &quot;day&quot;))
+
+ggplot(song, aes(x = category, fill = position_cat)) + geom_bar(position = &quot;fill&quot;) + 
+    xlab(&quot;Song&quot;) + ggtitle(&quot;Count of Position Category by Song&quot;) + 
+    scale_fill_brewer(palette = &quot;Dark2&quot;, name = &quot;Position Category&quot;, 
+        labels = c(&quot;top10&quot;, &quot;top50&quot;, &quot;top100&quot;, &quot;top200&quot;)) + facet_wrap(~year) + 
+    theme(axis.text.x = element_text(angle = 25))</code></pre>
+<p><img src="../../project/project1_files/figure-html/unnamed-chunk-5-3.png" width="672" style="display: block; margin: auto;" /></p>
+<p>The charts above compare three Grammy performance songs by streams, position, or both. Graph 1 is a correlation heatmap, correlating global streams, US streams and Global position of each song. One interesting thing is that there is a correlation of 1 between the US streams and the global streams of everything I wanted. There is a negative correlation between streams and position because the more streams lead to a position of a lower number, e.g. 1, even though that is a higher position on the chart.</p>
+<p>Graph 2 depicts the streams of Watermelon Sugar by date, colored by position. The lighter blue dots show positions lower on the chart and darker dots show higher positions on the chart. The number of global streams peaked around August 2020, then declined. When the global streams are higher, the position is lower (lower position = higher on the chart). Streaming of Watermelon Sugar increased dramatically after 2020-05, which makes sense because that was the month the music video was released.</p>
+<p>Graph 3 shows the proportion of each position category for each song by year. Don’t Start Now had the largest portion of top 10 compared to the other two. In 2019, Don’t Start Now and Everything I wanted were mostly in the top 10. Watermelon Sugar reached top 10 in 2020, and by 2021 it fell to top 200. I expected all three songs to increase at least to the top 100 following the Grammy’s performance, but this wasn’t the case. Only Everything I wanted re-entered the top 100.</p>
+<p>Note that the <code>echo = FALSE</code> parameter was added to the code chunk to prevent printing of the R code that generated the plot.</p>
 </div>
 
             

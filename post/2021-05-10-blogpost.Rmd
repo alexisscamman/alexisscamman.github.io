@@ -1,0 +1,49 @@
+---
+title: Python and R
+author: 'Alexis Scamman'
+date: '2021-05-10'
+slug: Python and R
+categories: []
+tags: []
+description: ''
+---
+
+![](/post/2021-05-10-blogpost_files/Python_R.png)
+
+## Python Communicating With R
+
+Here's some ways that R and python can communicate. Variables defined in python can be displayed in a ggplot using R.  
+
+```{python}
+import numpy as np
+x=np.random.normal(0,1,50)
+y=np.random.normal(0,1,50)
+```
+
+```{r}
+library(reticulate)
+library(ggplot2)
+ggplot()+geom_point(aes(py$x,py$y)) + xlab("x") + ylab("y") + ggtitle("Random Scatterplot")
+```
+
+## Another Example
+
+Python and R can communicate with each other using Reticulate. Python can access R-defined objects using r.
+```{r}
+library(reticulate)
+place <- "Capetown,"
+```
+
+```{python}
+place="South Africa"
+print(r.place,place)
+```
+
+This can be done the other way as well. R can access python-defined objects using py$
+
+```{r}
+cat(c(place, py$place))
+```
+
+![](/post/2021-05-10-blogpost_files/capetown-1.jpeg)
+

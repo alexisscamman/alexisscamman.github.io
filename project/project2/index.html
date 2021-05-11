@@ -4,10 +4,10 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="author" content="Chris Turner" />
+    <meta name="author" content="Alexis Scamman" />
     
     <link rel="shortcut icon" type="image/x-icon" href="../../img/favicon.ico">
-    <title>Project 2</title>
+    <title>Hurricanes</title>
     <meta name="generator" content="Hugo 0.83.1" />
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
     <link rel="stylesheet" type="text/css" href="../../css/main.css" />
@@ -54,13 +54,13 @@
       <div class="container">
         <div class="blog-post">
           <h3>
-            <strong><a href="../../project/project2/">Project 2</a></strong>
+            <strong><a href="../../project/project2/">Hurricanes</a></strong>
           </h3>
         </div>
  
 <div class="blog-title">
           <h4>
-         December 1, 2020 
+         January 1, 0001 
             &nbsp;&nbsp;
             
           </h4>
@@ -72,8 +72,503 @@
               
 
 
-<div id="test-project-2" class="section level2">
-<h2>Test Project 2</h2>
+<div id="data" class="section level2">
+<h2>Data</h2>
+<p>The dataset I chose includes information on named hurricanes in the Atlantic Ocean. I found this dataset interesting becuase it comes from a paper that claimed that hurricanes with female names were not taken as seriously and therefore caused more deaths and damage. The main variables include: Name, wind speed in MPH, atmospheric pressure at landfall in millibars, date of first landfall, property damage in millions of 2014 US dollars, deaths, and whether the hurricane had a male or female name. I created my own categorical variable by splitting the damage costs into two categories - high (more than 1B) and low (less than 100 M). There are 94 observations.</p>
+</div>
+<div id="manova-anova-pairwise-t-tests-and-type-1-error" class="section level2">
+<h2>MANOVA, ANOVA, Pairwise t-tests, and Type 1 Error</h2>
+<p><strong>1. (15 pts)</strong> Perform a MANOVA testing whether any of your numeric variables (or a subset of them, if including them all is unreasonable or doesn’t make sense) show a mean difference across levels of one of your categorical variables (3). If they do, perform univariate ANOVAs to find response(s) showing a mean difference across groups (3), and perform post-hoc t tests to find which groups differ (3). Discuss the number of tests you have performed, calculate the probability of at least one type I error (if unadjusted), and adjust the significance level accordingly (bonferroni correction) before discussing significant differences (3). Briefly discuss some of the MANOVA assumptions and whether or not they are likely to have been met here (no need for anything too in-depth) (2).</p>
+<pre class="r"><code>#Data
+library(readxl)
+hurricNamed &lt;- read_csv(&quot;hurricNamed.csv&quot;)
+
+hurricane &lt;- hurricNamed%&gt;%select(-BaseDamage, -AffectedStates) %&gt;% mutate(damage_level=case_when(BaseDam2014&gt;1000 ~ &quot;high&quot;, 1000&gt;BaseDam2014 ~ &quot;low&quot;)) %&gt;% separate(firstLF, into=c(&quot;year&quot;, &quot;month&quot;, &quot;day&quot;))
+glimpse(hurricane)</code></pre>
+<pre><code>## Rows: 94
+## Columns: 14
+## $ Hurricane &lt;chr&gt; &quot;Easy1950&quot;, &quot;King1950&quot;, &quot;Able1952&quot;,
+&quot;Barbara1953&quot;, &quot;Florence1953&quot;, &quot;Carol19…
+## $ Name &lt;chr&gt; &quot;Easy&quot;, &quot;King&quot;, &quot;Able&quot;, &quot;Barbara&quot;,
+&quot;Florence&quot;, &quot;Carol&quot;, &quot;Edna&quot;, &quot;Hazel&quot;, &quot;C…
+## $ Year &lt;dbl&gt; 1950, 1950, 1952, 1953, 1953, 1954, 1954,
+1954, 1955, 1955, 1955, 1956, 195…
+## $ LF.WindsMPH &lt;dbl&gt; 120, 130, 85, 85, 85, 120, 120, 145,
+120, 85, 120, 105, 145, 120, 85, 120, …
+## $ LF.PressureMB &lt;dbl&gt; 958, 955, 985, 987, 985, 960, 954,
+938, 962, 987, 960, 975, 945, 946, 984, …
+## $ LF.times &lt;dbl&gt; 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1,
+1, 1, 1, 3, 1, 1, 1, 1, 1, 1, 1, 2, …
+## $ NDAM2014 &lt;dbl&gt; 1870, 6030, 170, 65, 18, 21375, 3520,
+28500, 2270, 17250, 6990, 1730, 4290,…
+## $ year &lt;chr&gt; &quot;9&quot;, &quot;10&quot;, &quot;8&quot;, &quot;8&quot;, &quot;9&quot;, &quot;8&quot;, &quot;9&quot;, &quot;10&quot;,
+&quot;8&quot;, &quot;8&quot;, &quot;9&quot;, &quot;9&quot;, &quot;6&quot;, &quot;9&quot;, &quot;7&quot;…
+## $ month &lt;chr&gt; &quot;4&quot;, &quot;17&quot;, &quot;30&quot;, &quot;13&quot;, &quot;26&quot;, &quot;30&quot;, &quot;11&quot;,
+&quot;18&quot;, &quot;12&quot;, &quot;17&quot;, &quot;19&quot;, &quot;24&quot;, &quot;27&quot;…
+## $ day &lt;chr&gt; &quot;50&quot;, &quot;50&quot;, &quot;52&quot;, &quot;53&quot;, &quot;53&quot;, &quot;54&quot;, &quot;54&quot;,
+&quot;54&quot;, &quot;55&quot;, &quot;55&quot;, &quot;55&quot;, &quot;56&quot;, &quot;57…
+## $ deaths &lt;dbl&gt; 2, 4, 3, 1, 0, 60, 20, 20, 0, 200, 7, 15,
+416, 1, 0, 22, 50, 0, 46, 3, 3, 5…
+## $ mf &lt;chr&gt; &quot;f&quot;, &quot;m&quot;, &quot;m&quot;, &quot;f&quot;, &quot;f&quot;, &quot;f&quot;, &quot;f&quot;, &quot;f&quot;, &quot;f&quot;,
+&quot;f&quot;, &quot;m&quot;, &quot;f&quot;, &quot;f&quot;, &quot;f&quot;, &quot;f&quot;, …
+## $ BaseDam2014 &lt;dbl&gt; 32.419419, 275.073859, 24.569434,
+8.867416, 1.773483, 4050.686353, 352.0594…
+## $ damage_level &lt;chr&gt; &quot;low&quot;, &quot;low&quot;, &quot;low&quot;, &quot;low&quot;, &quot;low&quot;,
+&quot;high&quot;, &quot;low&quot;, &quot;high&quot;, &quot;low&quot;, &quot;high&quot;, &quot;l…</code></pre>
+<pre class="r"><code>#MANOVA
+man &lt;- manova(cbind(LF.WindsMPH, LF.PressureMB, LF.times, BaseDam2014, NDAM2014, deaths)~damage_level,data=hurricane)
+summary(man)</code></pre>
+<pre><code>## Df Pillai approx F num Df den Df Pr(&gt;F)
+## damage_level 1 0.45233 11.976 6 87 9.235e-10 ***
+## Residuals 92
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1</code></pre>
+<pre class="r"><code>summary.aov(man)</code></pre>
+<pre><code>## Response LF.WindsMPH :
+## Df Sum Sq Mean Sq F value Pr(&gt;F)
+## damage_level 1 8229 8229.3 19.532 2.7e-05 ***
+## Residuals 92 38761 421.3
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1
+##
+## Response LF.PressureMB :
+## Df Sum Sq Mean Sq F value Pr(&gt;F)
+## damage_level 1 12931 12931.1 50.995 2.11e-10 ***
+## Residuals 92 23329 253.6
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1
+##
+## Response LF.times :
+## Df Sum Sq Mean Sq F value Pr(&gt;F)
+## damage_level 1 1.4017 1.40165 12.506 0.0006375 ***
+## Residuals 92 10.3111 0.11208
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1
+##
+## Response BaseDam2014 :
+## Df Sum Sq Mean Sq F value Pr(&gt;F)
+## damage_level 1 2.1879e+09 2187870755 15.929 0.000132 ***
+## Residuals 92 1.2636e+10 137348706
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1
+##
+## Response NDAM2014 :
+## Df Sum Sq Mean Sq F value Pr(&gt;F)
+## damage_level 1 5.6573e+09 5657284923 32.168 1.62e-07 ***
+## Residuals 92 1.6180e+10 175866066
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1
+##
+## Response deaths :
+## Df Sum Sq Mean Sq F value Pr(&gt;F)
+## damage_level 1 161660 161660 4.3867 0.03897 *
+## Residuals 92 3390393 36852
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1</code></pre>
+<pre class="r"><code>#ANOVA
+summary(aov(LF.WindsMPH~damage_level,data=hurricane))</code></pre>
+<pre><code>## Df Sum Sq Mean Sq F value Pr(&gt;F)
+## damage_level 1 8229 8229 19.53 2.7e-05 ***
+## Residuals 92 38761 421
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1</code></pre>
+<pre class="r"><code>summary(aov(LF.PressureMB~damage_level,data=hurricane))</code></pre>
+<pre><code>## Df Sum Sq Mean Sq F value Pr(&gt;F)
+## damage_level 1 12931 12931 50.99 2.11e-10 ***
+## Residuals 92 23329 254
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1</code></pre>
+<pre class="r"><code>summary(aov(LF.times~damage_level,data=hurricane))</code></pre>
+<pre><code>## Df Sum Sq Mean Sq F value Pr(&gt;F)
+## damage_level 1 1.402 1.4017 12.51 0.000637 ***
+## Residuals 92 10.311 0.1121
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1</code></pre>
+<pre class="r"><code>summary(aov(BaseDam2014~damage_level,data=hurricane))</code></pre>
+<pre><code>## Df Sum Sq Mean Sq F value Pr(&gt;F)
+## damage_level 1 2.188e+09 2.188e+09 15.93 0.000132 ***
+## Residuals 92 1.264e+10 1.373e+08
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1</code></pre>
+<pre class="r"><code>summary(aov(NDAM2014~damage_level,data=hurricane))</code></pre>
+<pre><code>## Df Sum Sq Mean Sq F value Pr(&gt;F)
+## damage_level 1 5.657e+09 5.657e+09 32.17 1.62e-07 ***
+## Residuals 92 1.618e+10 1.759e+08
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1</code></pre>
+<pre class="r"><code>#pairwise t-tests
+pairwise.t.test(hurricane$LF.WindsMPH, hurricane$damage_level, p.adj = &quot;none&quot;)</code></pre>
+<pre><code>## 
+##  Pairwise comparisons using t tests with pooled SD 
+## 
+## data:  hurricane$LF.WindsMPH and hurricane$damage_level 
+## 
+##     high   
+## low 2.7e-05
+## 
+## P value adjustment method: none</code></pre>
+<pre class="r"><code>pairwise.t.test(hurricane$LF.PressureMB, hurricane$damage_level, p.adj = &quot;none&quot;)</code></pre>
+<pre><code>##
+## Pairwise comparisons using t tests with pooled SD
+##
+## data: hurricane$LF.PressureMB and hurricane$damage_level
+##
+## high
+## low 2.1e-10
+##
+## P value adjustment method: none</code></pre>
+<pre class="r"><code>pairwise.t.test(hurricane$LF.times, hurricane$damage_level, p.adj = &quot;none&quot;)</code></pre>
+<pre><code>## 
+##  Pairwise comparisons using t tests with pooled SD 
+## 
+## data:  hurricane$LF.times and hurricane$damage_level 
+## 
+##     high   
+## low 0.00064
+## 
+## P value adjustment method: none</code></pre>
+<pre class="r"><code>pairwise.t.test(hurricane$BaseDam2014, hurricane$damage_level, p.adj = &quot;none&quot;)</code></pre>
+<pre><code>## 
+##  Pairwise comparisons using t tests with pooled SD 
+## 
+## data:  hurricane$BaseDam2014 and hurricane$damage_level 
+## 
+##     high   
+## low 0.00013
+## 
+## P value adjustment method: none</code></pre>
+<pre class="r"><code>pairwise.t.test(hurricane$NDAM2014, hurricane$damage_level, p.adj = &quot;none&quot;)</code></pre>
+<pre><code>## 
+##  Pairwise comparisons using t tests with pooled SD 
+## 
+## data:  hurricane$NDAM2014 and hurricane$damage_level 
+## 
+##     high   
+## low 1.6e-07
+## 
+## P value adjustment method: none</code></pre>
+<pre class="r"><code>#Type I Error
+1 - (.95)^21</code></pre>
+<pre><code>## [1] 0.6594384</code></pre>
+<pre class="r"><code>#Bonferroni adjusted 
+.05/21</code></pre>
+<pre><code>## [1] 0.002380952</code></pre>
+<p>After performing a MANOVA test, 5 of the variables were found to be significant - all of the numeric variables besides number of deaths. Then, a univariate ANOVA test was performed for each of the five significant variables to find the difference across the levels of damage. 21 tests were performed in total. The unadjusted type one error is 0.659, and after adjusting using Bonferroni correction the error is 0.00238.</p>
+<p>One MANOVA assumption is that data are random samples and independent observations. Each observation was a different, named hurricane in the Atlantic so they are independent. They might not be a random sample though because it includes every named hurricane between 1950 and 2012. MANOVA also assumes multivariate normality, homogeneity, and linearity- the dependent variables most likely meet these assumption. One last assumption is that there should be no multicollinerity. I removed some variables that had the damage cost at the time versus now because they would be too correlated.</p>
+</div>
+<div id="randomization-test" class="section level2">
+<h2>Randomization Test</h2>
+<p><strong>2. (10 pts)</strong> Perform some kind of randomization test on your data (that makes sense). The statistic can be anything you want (mean difference, correlation, F-statistic/ANOVA, chi-squared), etc. State null and alternative hypotheses, perform the test, and interpret the results (7). Create a plot visualizing the null distribution and the test statistic (3).</p>
+<pre class="r"><code>#mean difference for winds
+hurricane%&gt;%group_by(damage_level)%&gt;%summarize(means=mean(LF.WindsMPH))%&gt;%summarize(&quot;diff_means&quot;=diff(means))</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   diff_means
+##        &lt;dbl&gt;
+## 1      -18.7</code></pre>
+<pre class="r"><code>#randomization test for weight
+rand_dist&lt;-vector()
+for(i in 1:5000){
+new&lt;-data.frame(damage=hurricane$damage_level, winds=sample(hurricane$LF.WindsMPH))
+rand_dist[i]&lt;-mean(new[new$damage==&quot;high&quot;,]$winds)-
+              mean(new[new$damage==&quot;low&quot;,]$winds)}
+
+mean(rand_dist&gt;18.73016 | rand_dist &lt; -18.73016)</code></pre>
+<pre><code>## [1] 0</code></pre>
+<pre class="r"><code>hist(rand_dist,main=&quot;&quot;,ylab=&quot;&quot;); abline(v = c(18.73016,-18.73016),col=&quot;red&quot;)</code></pre>
+<p><img src="../../project/project2_files/figure-html/unnamed-chunk-1-1.png" width="768" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>#plot
+ggplot(new,aes(winds, fill=damage)) + geom_histogram(bins=10) + facet_wrap(~damage, ncol=2) + theme(legend.position = &quot;none&quot;)</code></pre>
+<p><img src="../../project/project2_files/figure-html/unnamed-chunk-1-2.png" width="768" style="display: block; margin: auto;" />
+The null hypothesis is that the wind speeds of the hurricane have no affect on the level of damage. The alternative hypothesis is that greater wind speeds will increase the level of damage (high vs low). The p-value is 0.0002 which is p&lt;0.05, so the null hypothesis is rejected.The wind speeds for high damage and low damage differ. The mean difference is -18.73. The randomization test rejects the null hypothesis that wind speed has no effect of the damage level.</p>
+</div>
+<div id="linear-regression" class="section level2">
+<h2>Linear Regression</h2>
+<p><strong>3. (40 pts)</strong> Build a linear regression model predicting one of your response variables from at least 2 other variables, including their interaction. Mean-center any numeric variables involved in the interaction.</p>
+<pre><code>- Interpret the coefficient estimates (do not discuss significance) (10)
+- Plot the regression using `ggplot()` using geom_smooth(method=&quot;lm&quot;). If your interaction is numeric by numeric,             refer to code in the slides to make the plot or check out the `interactions` package, which makes this easier. If         you have 3 or more predictors, just chose two of them to plot for convenience. (10)
+- What proportion of the variation in the outcome does your model explain? (4)
+- Check assumptions of linearity, normality, and homoskedasticity either graphically or using a hypothesis test (5)
+- Regardless, recompute regression results with robust standard errors via `coeftest(..., vcov=vcovHC(...))`. Discuss         significance of results, including any changes from before/after robust SEs if applicable. (10)</code></pre>
+<pre class="r"><code>#Centering Wind Speed
+hurricane2 &lt;- hurricane %&gt;% mutate(cWinds=LF.WindsMPH - mean(LF.WindsMPH,na.rm=T))
+
+#Linear Regression
+fit&lt;-lm(BaseDam2014~mf*cWinds, data=hurricane2)
+summary(fit)</code></pre>
+<pre><code>##
+## Call:
+## lm(formula = BaseDam2014 ~ mf * cWinds, data =
+hurricane2)
+##
+## Residuals:
+## Min 1Q Median 3Q Max
+## -12286 -4312 -2920 -56 92162
+##
+## Coefficients:
+## Estimate Std. Error t value Pr(&gt;|t|)
+## (Intercept) 4706.08 1525.92 3.084 0.00271 **
+## mfm 849.85 2706.60 0.314 0.75425
+## cWinds 65.30 70.88 0.921 0.35938
+## mfm:cWinds 211.37 116.94 1.807 0.07403 .
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1
+##
+## Residual standard error: 12190 on 90 degrees of freedom
+## Multiple R-squared: 0.09731, Adjusted R-squared: 0.06722
+## F-statistic: 3.234 on 3 and 90 DF, p-value: 0.02598</code></pre>
+<pre class="r"><code>#Graph
+ggplot(hurricane2, aes(y=BaseDam2014, x=cWinds, color=mf)) + geom_point() + geom_smooth(method=&quot;lm&quot;)</code></pre>
+<p><img src="../../project/project2_files/figure-html/unnamed-chunk-2-1.png" width="768" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>#Checking assumptions
+library(lmtest)
+library(sandwich)
+bptest(fit)</code></pre>
+<pre><code>## 
+##  studentized Breusch-Pagan test
+## 
+## data:  fit
+## BP = 1.0801, df = 3, p-value = 0.7819</code></pre>
+<pre class="r"><code>ggplot(fit,aes(cWinds, fill=BaseDam2014)) + geom_histogram(bins=10)</code></pre>
+<p><img src="../../project/project2_files/figure-html/unnamed-chunk-2-2.png" width="768" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>#Regression with robust SE
+coeftest(fit,vcov=vcovHC(fit))</code></pre>
+<pre><code>##
+## t test of coefficients:
+##
+## Estimate Std. Error t value Pr(&gt;|t|)
+## (Intercept) 4706.077 1757.665 2.6775 0.008817 **
+## mfm 849.852 2320.496 0.3662 0.715048
+## cWinds 65.300 84.931 0.7689 0.443986
+## mfm:cWinds 211.367 137.783 1.5341 0.128523
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1</code></pre>
+<p>The intercept is the predicted average cost of damage for female named hurricanes with average wind speeds, which is $4.706 B. The damage cost of male named hurricanes with average wind speeds have $2849.85 M more in damage than female named hurricanes. For every one MPH increase in wind speed, the damage cost of female named hurricanes increases by $65.30 M. For every one MPH increase in wind speed for male named hurricanes, the damage cost increases by $211.37 M.</p>
+<p>The multiple R-squared is 0.09731, and the adjusted R-squared is 0.06722. This is the proportion of the variation of damage amount explained by the model.</p>
+<p>The scatter plot shows that there is a linear relationship between the dependent variable, damage cost, and the independent variables, wind speed and male/female name. Normality was checked by eyeing a histogram, and this assumption was not met. homoskedasticity was checked using bptest. The null hypothesis was not rejected because the p-value was 0.78, p&gt;0.05, therefore the data is homoskedastic.</p>
+<p>Regression results with robust SEs differs from the results without robust SEs. With robust SEs, the SE of the intercept increased, the SE of the slope of male named hurricanes decreased, the SE of the slope of wind speed increased, and the SE of the slope of wind speed on damage cost for male named hurricanes increased. The p-values also changed with robust SEs. The p-values decreased for the intercept and all slopes except the slope for male named hurricanes, which decreased.</p>
+</div>
+<div id="bootstrapped-standard-errors-for-linear-regression" class="section level1">
+<h1>Bootstrapped Standard Errors for Linear Regression</h1>
+<p><strong>4. (5 pts)</strong> Rerun same regression model (with the interaction), but this time compute bootstrapped standard errors (either by resampling observations or residuals). Discuss any changes you observe in SEs and p-values using these SEs compared to the original SEs and the robust SEs)</p>
+<pre class="r"><code>#Bootstrapping by resampling residuals
+fit &lt;- lm(BaseDam2014~mf*cWinds, data=hurricane2)
+  resids&lt;-fit$residuals
+  fitted&lt;-fit$fitted.values
+  resid_resamp&lt;-replicate(5000,{
+    new_resids&lt;-sample(resids,replace=TRUE)
+    hurricane2$new_y&lt;-fitted+new_resids
+    fit&lt;-lm(new_y~cWinds+mf,data=hurricane2)
+    coef(fit) 
+})
+
+resid_resamp%&gt;%t%&gt;%as.data.frame%&gt;%summarize_all(sd)  </code></pre>
+<pre><code>##   (Intercept)   cWinds      mfm
+## 1    1495.065 54.35595 2665.233</code></pre>
+<p>Compared to the original SE’s the bootstrapped SE’s are lower for wind speed and a male gender name. Compared to the robust SE’s, the bootstrapped SE’s are lower for wind speed, but higher for male gender name.</p>
+<div id="logistic-regression" class="section level2">
+<h2>Logistic Regression</h2>
+<p><strong>5. (30 pts)</strong> Fit a logistic regression model predicting a binary variable (if you don’t have one, make/get one) from at least two explanatory variables (interaction not necessary).</p>
+<pre><code>- Interpret coefficient estimates in context (10)
+- Report a confusion matrix for your logistic regression (5)
+- Compute and discuss the Accuracy, Sensitivity (TPR), Specificity (TNR), Precision (PPV), and AUC of your model (5)
+- Using ggplot, make a density plot of the log-odds (logit) colored/grouped by your binary outcome variable (5)
+- Generate an ROC curve (plot) and calculate AUC (either manually or with a package); interpret (5)</code></pre>
+<pre class="r"><code>library(tidyverse)
+library(lmtest)
+
+#Dummy code
+hurricane2&lt;-hurricane2%&gt;%mutate(y=ifelse(damage_level==&quot;high&quot;,1,0))
+head(hurricane2)</code></pre>
+<pre><code>## # A tibble: 6 x 16
+## Hurricane Name Year LF.WindsMPH LF.PressureMB LF.times
+NDAM2014 year month day deaths mf
+## &lt;chr&gt; &lt;chr&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;
+&lt;chr&gt; &lt;dbl&gt; &lt;chr&gt;
+## 1 Easy1950 Easy 1950 120 958 1 1870 9 4 50 2 f
+## 2 King1950 King 1950 130 955 1 6030 10 17 50 4 m
+## 3 Able1952 Able 1952 85 985 1 170 8 30 52 3 m
+## 4 Barbara1… Barb… 1953 85 987 1 65 8 13 53 1 f
+## 5 Florence… Flor… 1953 85 985 1 18 9 26 53 0 f
+## 6 Carol1954 Carol 1954 120 960 2 21375 8 30 54 60 f
+## # … with 4 more variables: BaseDam2014 &lt;dbl&gt;,
+damage_level &lt;chr&gt;, cWinds &lt;dbl&gt;, y &lt;dbl&gt;</code></pre>
+<pre class="r"><code>#Logistic Regression
+logfit&lt;-glm(y~cWinds + mf, data=hurricane2, family=&quot;binomial&quot;)
+coeftest(logfit)</code></pre>
+<pre><code>##
+## z test of coefficients:
+##
+## Estimate Std. Error z value Pr(&gt;|z|)
+## (Intercept) -0.089322 0.274376 -0.3255 0.7447676
+## cWinds 0.047487 0.012716 3.7345 0.0001881 ***
+## mfm 0.088070 0.497533 0.1770 0.8594984
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1</code></pre>
+<pre class="r"><code>#odds of high damage level
+1*10^-0.089322</code></pre>
+<pre><code>## [1] 0.8141005</code></pre>
+<pre class="r"><code>#increase in odds of high damage level from wind speed
+1*10^0.047487</code></pre>
+<pre><code>## [1] 1.115545</code></pre>
+<pre class="r"><code>#increase in odds of high damage level from male name
+1*10^0.088070</code></pre>
+<pre><code>## [1] 1.224814</code></pre>
+<pre class="r"><code>#Confusion Matrix
+prob &lt;- predict(logfit, type=&quot;response&quot;)
+table(predict = as.numeric(prob &gt; .5), truth = hurricane2$y) %&gt;% addmargins</code></pre>
+<pre><code>##        truth
+## predict  0  1 Sum
+##     0   36 13  49
+##     1   13 32  45
+##     Sum 49 45  94</code></pre>
+<pre class="r"><code>#accuracy
+(36+32)/94</code></pre>
+<pre><code>## [1] 0.7234043</code></pre>
+<pre class="r"><code>#sensitivity
+36/49</code></pre>
+<pre><code>## [1] 0.7346939</code></pre>
+<pre class="r"><code>#specificity
+32/45</code></pre>
+<pre><code>## [1] 0.7111111</code></pre>
+<pre class="r"><code>#precision
+36/49</code></pre>
+<pre><code>## [1] 0.7346939</code></pre>
+<pre class="r"><code>#AUC and ROC plot
+library(plotROC)
+ROCplot&lt;-ggplot(hurricane2)+geom_roc(aes(d=damage_level,m=prob), n.cuts=0) 
+ROCplot</code></pre>
+<p><img src="../../project/project2_files/figure-html/unnamed-chunk-4-1.png" width="768" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>calc_auc(ROCplot)</code></pre>
+<pre><code>##   PANEL group       AUC
+## 1     1    -1 0.2678005</code></pre>
+<pre class="r"><code>#Density plot
+hurricane2$logit&lt;-predict(logfit,type=&quot;link&quot;)
+
+hurricane2%&gt;%ggplot()+geom_density(aes(logit,color=damage_level,fill=damage_level), alpha=.4)+
+  theme(legend.position=c(.85,.85))+geom_vline(xintercept=0)+xlab(&quot;logit (log-odds)&quot;)+
+  geom_rug(aes(logit,color=damage_level))</code></pre>
+<p><img src="../../project/project2_files/figure-html/unnamed-chunk-4-2.png" width="768" style="display: block; margin: auto;" />
+For female named hurricane and wind speed = 0, the log-odds is -0.089, the odds of high damage level is e^-0.089=0.814. When the wind speed increases by one MPH, the odds are multiplied by e^0.0475=1.1155. The odds of high damage level increase by 11.55%. When the hurricane has a male name the odds are multiplied by e^0.0881=1.2248. The odds of a high damage leel increase by 22.48%.</p>
+<p>The accuracy is the proportion classified as correct, which was 0.723. The sensitivity is the proportion of high damage level classified correctly, which was 0.734. The specificity is the proportion of low damage level classified as correct, which was 0.711. The precision is propotion of high damage levels that were, which was 0.735.</p>
+<p>An ROC plot was generated, using actual damage level and predicted damage level. The ROC graph shows that wind speed and gender of name were bad predictors of damage level. Normally, if there is are good predictors, it curves the other direction toward the top left corner rather than the bottom right corner. The AUC was calculated to be 0.2678. This is a very bad AUC. The graph looks this way because the AUC is extremely low, therefore very bad.</p>
+</div>
+<div id="logistic-regression-with-all-variables" class="section level2">
+<h2>Logistic Regression with all variables</h2>
+<p><strong>6. (25 pts)</strong> Perform a logistic regression predicting the same binary response variable from <em>ALL</em> of the rest of your variables (the more, the better!)</p>
+<pre><code>- Fit model, compute in-sample classification diagnostics (Accuracy, Sensitivity, Specificity, Precision, AUC), and interpret (5)
+- Perform 10-fold (or repeated random sub-sampling) CV with the same model and report average out-of-sample classification diagnostics (Accuracy, Sensitivity, Specificity, Precision, and AUC); interpret AUC and compare with the in-sample metrics (10)
+- Perform LASSO on the same model/variables. Choose lambda to give the simplest model whose accuracy is near that of the best (i.e., `lambda.1se`). Discuss which variables are retained. (5)
+- Perform 10-fold CV using only the variables lasso selected: compare model&#39;s out-of-sample AUC to that of your logistic regressions above (5)</code></pre>
+<pre class="r"><code>class_diag&lt;-function(probs,truth){
+  tab&lt;-table(factor(probs&gt;.5,levels=c(&quot;FALSE&quot;,&quot;TRUE&quot;)),truth)
+  acc=sum(diag(tab))/sum(tab)
+  sens=tab[2,2]/colSums(tab)[2]
+  spec=tab[1,1]/colSums(tab)[1]
+  ppv=tab[2,2]/rowSums(tab)[2]
+  
+  if(is.numeric(truth)==FALSE &amp; is.logical(truth)==FALSE) truth&lt;-as.numeric(truth)-1
+  
+  #CALCULATE EXACT AUC
+  ord&lt;-order(probs, decreasing=TRUE)
+  probs &lt;- probs[ord]; truth &lt;- truth[ord]
+  
+  TPR=cumsum(truth)/max(1,sum(truth)) 
+  FPR=cumsum(!truth)/max(1,sum(!truth))
+  
+  dup&lt;-c(probs[-1]&gt;=probs[-length(probs)], FALSE)
+  TPR&lt;-c(0,TPR[!dup],1); FPR&lt;-c(0,FPR[!dup],1)
+  
+  n &lt;- length(TPR)
+  auc&lt;- sum( ((TPR[-1]+TPR[-n])/2) * (FPR[-1]-FPR[-n]) )
+
+  data.frame(acc,sens,spec,ppv,auc)
+}
+
+class_diag(prob,hurricane2$y)</code></pre>
+<pre><code>##         acc      sens      spec       ppv       auc
+## 1 0.7234043 0.7111111 0.7346939 0.7111111 0.7321995</code></pre>
+<pre class="r"><code>#k-fold CV
+hurricane3&lt;-hurricane2%&gt;%select(-Hurricane,-Name,-Year,-year,-day,-month,-damage_level,-logit,-BaseDam2014,-NDAM2014)%&gt;%na.omit #I had to keep removing variables because running it with these caused an error code, but when I removed them all it ran
+
+set.seed(1234)
+k=10
+data&lt;-hurricane3[sample(nrow(hurricane3)),]
+folds&lt;-cut(seq(1:nrow(data)),breaks=k,labels=F)
+
+diags&lt;-NULL
+
+for(i in 1:k){
+  
+  train&lt;-data[folds!=i,] 
+  test&lt;-data[folds==i,]
+  truth&lt;-test$y
+  
+  fit&lt;-glm(y~.,data=train,family=&quot;binomial&quot;)
+  probs&lt;-predict(fit,newdata = test,type=&quot;response&quot;)
+  diags&lt;-rbind(diags,class_diag(probs,truth))
+}
+
+summarize_all(diags,mean) #average diagnostics across all k folds</code></pre>
+<pre><code>##         acc      sens      spec       ppv       auc
+## 1 0.8266667 0.8416667 0.8416667 0.8316667 0.9246111</code></pre>
+<pre class="r"><code># LASSO
+library(glmnet)
+set.seed(1234)
+y &lt;- as.matrix(hurricane3$y) 
+x &lt;- model.matrix(y~., data = hurricane3)[,-1]
+x&lt;- scale(x)
+cv &lt;- cv.glmnet(x, y, family = &quot;binomial&quot;)
+lasso &lt;- glmnet(x, y, family = &quot;binomial&quot;, lambda = cv$lambda.1se)
+coef(lasso)</code></pre>
+<pre><code>## 7 x 1 sparse Matrix of class &quot;dgCMatrix&quot;
+##                       s0
+## (Intercept)    0.1578089
+## LF.WindsMPH    .        
+## LF.PressureMB -1.7745697
+## LF.times       1.0210990
+## deaths         1.1395483
+## mfm            .        
+## cWinds        -0.3632527</code></pre>
+<pre class="r"><code>#k-fold with LASSO variables
+lasso_data &lt;- hurricane3%&gt;%select(LF.PressureMB, LF.times, deaths, mf, y)
+
+set.seed(1234)
+k=10
+data &lt;- lasso_data[sample(nrow(lasso_data)),]
+folds &lt;- cut(seq(1:nrow(lasso_data)),breaks=k,labels=F)
+
+diags&lt;-NULL
+for(i in 1:k){
+  train&lt;-data[folds!=i,] 
+  test&lt;-data[folds==i,]
+  truth&lt;-test$y 
+  fit&lt;-glm(y~(.)^2, data=lasso_data, family=&quot;binomial&quot;)
+  probs&lt;-predict(fit,newdata = test,type=&quot;response&quot;)
+  diags&lt;-rbind(diags,class_diag(probs,truth))
+}
+summarize_all(diags,mean)</code></pre>
+<pre><code>##    acc      sens      spec  ppv       auc
+## 1 0.84 0.8183333 0.8666667 0.85 0.9383333</code></pre>
+<p>I ran class_diag on hurricane 2 datatset: the accuracy is 0.7234043, the sensitivity is 0.7111111, the specificity is 0.7346939, the precision is 0.7111111, and the AUC is 0.7321995. The AUC shows the variables are a fair predictor of damage level.</p>
+<p>A k-fold CV was attempted to be performed on the logistic regression to predict damage level using all of the variables in hurricane2. However, several error codes were received so I removed many of the categorical variables, such as hurricane, name, year, month, day, and saved as a new dataset, hurricane3. I also removed NDAM2014 and BaseDam2014 because they were used to make the binomial variable. After this, the k-fold test was performed. The new acc was 0.925, sens was 0.841, spec was 0.842, ppv was 0.832, and auc was 0.925, which is extremely high, therefore, a great predictor. The class_diag gave back only “fair” results. The out of sample AUC actually increased compared to the original AUC.</p>
+<p>When LASSO was run, atmospheric pressure, land fall times, deaths, and Winds (centered) was retained. (Side note: The gender of name of the hurricane was not retained, which I find interesting because the claim of the paper where this data came from was that hurricanes with female names were taken less seriously and therefore caused more damage.) I ran another k-fold CV with only the variables retained from LASSO. The acc was 0.84, sens was 0.818, spec was 0.867, ppv was 0.85, and auc was 0.938. The AUC increased, which makes sense because LASSO retains the variables that are the strongest predictors.</p>
+<p>Note that the <code>echo = FALSE</code> parameter was added to the code chunk to prevent printing of the R code that generated the plot.</p>
+</div>
 </div>
 
             
